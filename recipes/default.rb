@@ -4,6 +4,14 @@ if node['consul']['use_dnsmasq'].casecmp("true")
 
     if node['consul']['configure_resolv_conf'].casecmp("true") &&  ! ::File.exist?('/etc/dnsmasq.d/default')
 
+        kubernetes_dns = nil
+        if node['install']['enterprise']['install'].casecmp?("true") and node['install']['kubernetes'].casecmp?("true")
+            kubernetes_dns = "10.96.0.10"
+            if node.attribute?('kube-hops') and node['kube-hops'].attribute?('dns_ip')
+                kubernetes_dns = node['kube-hops']['dns_ip']
+            end
+        end
+
         interface_name = consul_helper.get_ifname_from_ip(my_private_ip())
         # Disable systemd-resolved for Ubuntu
         case node["platform_family"]
@@ -41,7 +49,8 @@ if node['consul']['use_dnsmasq'].casecmp("true")
                 variables({
                     :resolv_conf => nil,
                     :if_name => interface_name,
-                    :dnsmasq_ip => "127.0.0.2"
+                    :dnsmasq_ip => "127.0.0.2",
+                    :kubernetes_dns => kubernetes_dns
                 })
             end
 
@@ -80,7 +89,8 @@ if node['consul']['use_dnsmasq'].casecmp("true")
                 variables({
                     :resolv_conf => resolv_conf,
                     :if_name => interface_name,
-                    :dnsmasq_ip => "127.0.0.1"
+                    :dnsmasq_ip => "127.0.0.1",
+                    :kubernetes_dns => kubernetes_dns
                 })
             end
 
