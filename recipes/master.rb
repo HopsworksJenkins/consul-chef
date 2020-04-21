@@ -1,3 +1,5 @@
+include_recipe "consul::security"
+
 masters = private_recipe_ips("consul", "master")
 if masters.length > 1
     if not node['consul']['retry_join']['provider'].empty? and not node['consul']['retry_join']['tag_key'].nil?
@@ -8,13 +10,20 @@ else
     masters = nil
 end
 
+crypto_dir = x509_helper.get_crypto_dir(node['consul']['home'])
+hops_ca = "#{crypto_dir}/#{x509_helper.get_hops_ca_bundle_name()}"
+certificate = "#{crypto_dir}/#{x509_helper.get_certificate_bundle_name(node['consul']['user'])}"
+key = "#{crypto_dir}/#{x509_helper.get_private_key_pkcs8_name(node['consul']['user'])}"
 template "#{node['consul']['conf_dir']}/consul.hcl" do
     source "config/master.hcl.erb"
     owner node['consul']['user']
     group node['consul']['group']
     mode 0750
     variables({
-        :masters => masters
+        :masters => masters,
+        :hops_ca => hops_ca,
+        :certificate => certificate,
+        :key => key
     })
 end
 
