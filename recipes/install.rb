@@ -21,7 +21,6 @@ if node.attribute?("hops") && node['hops'].attribute?("group")
 end
 
 group hops_group do
-    gid node['hops']['group_id']
     action :create
     not_if "getent group #{hops_group}"
     not_if { node['install']['external_users'].casecmp("true") == 0 }
